@@ -167,6 +167,24 @@ Follow these steps to set up the environment and run the application.
 
 <br/>
 
+### ATS Tailoring CLI
+
+To generate a keyword-aligned resume text file and a starter cover letter from a resume and job description, run:
+
+```bash
+python scripts/ats_tailor.py --resume Data/Resumes/your_resume.pdf --job-desc Data/JobDescription/your_jd.pdf --name "Your Name" --role "Target Role" --company "Company Name"
+```
+
+The script outputs:
+
+* `Data/Output/tailored_resume.txt`
+* `Data/Output/cover_letter.txt`
+
+> [!NOTE]
+> The script only generates tailored documents. It does **not** submit applications automatically.
+
+<br/>
+
 ### Docker
 
 1. Build the image and start application
