@@ -1,6 +1,7 @@
 import argparse
 import os
-from typing import Iterable, List
+import tempfile
+from typing import Iterable, List, Tuple
 
 from scripts.KeytermsExtraction import KeytermExtractor
 from scripts.ReadPdf import read_single_pdf
@@ -12,6 +13,18 @@ def read_text(path: str) -> str:
         return read_single_pdf(path)
     with open(path, "r", encoding="utf-8") as handle:
         return handle.read()
+
+
+def read_text_from_upload(filename: str, content: bytes) -> str:
+    if filename.lower().endswith(".pdf"):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as handle:
+            handle.write(content)
+            temp_path = handle.name
+        try:
+            return read_single_pdf(temp_path)
+        finally:
+            os.unlink(temp_path)
+    return content.decode("utf-8", errors="ignore")
 
 
 def normalize_keyterms(keyterms: Iterable) -> List[str]:
@@ -85,6 +98,39 @@ def write_output(path: str, content: str) -> None:
         handle.write(content)
 
 
+def build_outputs(
+    resume_text: str,
+    job_text: str,
+    *,
+    top_n: int = 30,
+    max_keywords: int = 20,
+    name: str = "Your Name",
+    role: str = "the role",
+    company: str = "the company",
+) -> Tuple[str, str, List[str], List[str]]:
+    resume_keywords = extract_keywords(resume_text, top_n)
+    job_keywords = extract_keywords(job_text, top_n)
+
+    resume_lookup = {term.lower() for term in resume_keywords}
+    matched = [term for term in job_keywords if term.lower() in resume_lookup]
+    missing = [term for term in job_keywords if term.lower() not in resume_lookup]
+
+    tailored_resume = build_tailored_resume(
+        resume_text,
+        matched,
+        missing,
+        max_keywords,
+    )
+    cover_letter = build_cover_letter(
+        name,
+        role,
+        company,
+        matched,
+        missing,
+    )
+    return tailored_resume, cover_letter, matched, missing
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Tailor a resume and cover letter based on ATS keyword matching."
@@ -110,25 +156,14 @@ def main() -> None:
     resume_text = read_text(args.resume)
     job_text = read_text(args.job_desc)
 
-    resume_keywords = extract_keywords(resume_text, args.top_n)
-    job_keywords = extract_keywords(job_text, args.top_n)
-
-    resume_lookup = {term.lower() for term in resume_keywords}
-    matched = [term for term in job_keywords if term.lower() in resume_lookup]
-    missing = [term for term in job_keywords if term.lower() not in resume_lookup]
-
-    tailored_resume = build_tailored_resume(
+    tailored_resume, cover_letter, _, _ = build_outputs(
         resume_text,
-        matched,
-        missing,
-        args.max_keywords,
-    )
-    cover_letter = build_cover_letter(
-        args.name,
-        args.role,
-        args.company,
-        matched,
-        missing,
+        job_text,
+        top_n=args.top_n,
+        max_keywords=args.max_keywords,
+        name=args.name,
+        role=args.role,
+        company=args.company,
     )
 
     resume_output = os.path.join(args.output_dir, "tailored_resume.txt")

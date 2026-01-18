@@ -185,6 +185,18 @@ The script outputs:
 
 <br/>
 
+### ATS Tailoring (Simple UI)
+
+If you prefer a drag-and-drop interface, run the lightweight Streamlit UI:
+
+```bash
+streamlit run streamlit_ats.py
+```
+
+Upload a resume and job description (PDF or TXT), then download the tailored resume and cover letter.
+
+<br/>
+
 ### Docker
 
 1. Build the image and start application
